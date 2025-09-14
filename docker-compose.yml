@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  agenda-frontend:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    environment:
+      - VITE_API_URL=http://localhost:3001/api
+    container_name: agenda-frontend
+    restart: unless-stopped
+    depends_on:
+      - agenda-backend
+    networks:
+      - agenda-network
+
+  agenda-backend:
+    # Cuando tengas la info del backend, actualiza esta imagen
+    image: agusklos/adr-backend:latest
+    ports:
+      - "3001:3001"  # Cambiado para que coincida con la configuración actual
+    container_name: agenda-backend
+    restart: unless-stopped
+    depends_on:
+      - agenda-database
+    environment:
+      - NODE_ENV=production
+      - DB_HOST=agenda-database
+      - DB_PORT=3306
+      - DB_NAME=contacts_db
+      - DB_USER=root
+      - DB_PASSWORD=root_password
+    networks:
+      - adr-network
+
+  adr-database:
+    image: mysql:8.0
+    container_name: adr-database
+    restart: unless-stopped
+    environment:
+      - MYSQL_DATABASE=contacts_db
+      - MYSQL_USER=adr_user
+      - MYSQL_PASSWORD=adr_password
+      - MYSQL_ROOT_PASSWORD=root_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - adr_db_data:/var/lib/mysql
+    networks:
+      - adr-network
+
+networks:
+  adr-network:
+    driver: bridge
+
+volumes:
+  adr_db_data:
