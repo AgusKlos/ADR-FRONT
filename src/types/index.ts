@@ -16,6 +16,13 @@ export interface ContactFormData {
   email: string;
 }
 
+export interface FormErrors {
+  nombre?: string;
+  apellido?: string;
+  telefono?: string;
+  email?: string;
+}
+
 export interface ApiResponse<T> {
   success: boolean;
   data?: T;

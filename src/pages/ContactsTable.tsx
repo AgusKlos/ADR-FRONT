@@ -181,8 +181,8 @@ const ContactsTable: React.FC = () => {
   return (
     <Container>
       <Header>
-        <Title>📞 Agenda de Contactos</Title>
-        <AddButton to="/add">+ Agregar Contacto</AddButton>
+        <Title>Agenda de Contactos</Title>
+        <AddButton to="/add">Agregar Contacto</AddButton>
       </Header>
 
       {error && <ErrorMessage>{error}</ErrorMessage>}

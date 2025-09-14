@@ -3,7 +3,8 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { toast } from 'react-toastify';
 import { contactsApi } from '../services/api';
-import { ContactFormData } from '../types';
+import { ContactFormData, FormErrors } from '../types';
+import { validateContact, hasErrors, getFirstError } from '../utils/validation';
 
 const Container = styled.div`
   max-width: 600px;
@@ -130,13 +131,6 @@ const ErrorMessage = styled.div`
   margin-bottom: 1rem;
 `;
 
-interface FormErrors {
-  nombre?: string;
-  apellido?: string;
-  telefono?: string;
-  email?: string;
-}
-
 const ContactForm: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
@@ -182,28 +176,19 @@ const ContactForm: React.FC = () => {
   };
 
   const validateForm = (): boolean => {
-    const newErrors: FormErrors = {};
-
-    if (!formData.nombre.trim()) {
-      newErrors.nombre = 'El nombre es requerido';
+    const validationErrors = validateContact(formData, isEditing);
+    
+    if (hasErrors(validationErrors)) {
+      setErrors(validationErrors);
+      const firstError = getFirstError(validationErrors);
+      if (firstError) {
+        toast.error(firstError);
+      }
+      return false;
     }
 
-    if (!formData.apellido.trim()) {
-      newErrors.apellido = 'El apellido es requerido';
-    }
-
-    if (!formData.telefono.trim()) {
-      newErrors.telefono = 'El teléfono es requerido';
-    }
-
-    if (!formData.email.trim()) {
-      newErrors.email = 'El email es requerido';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'El email no es válido';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    setErrors({});
+    return true;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -219,18 +204,32 @@ const ContactForm: React.FC = () => {
 
       if (isEditing && id) {
         await contactsApi.update(parseInt(id), formData);
-        toast.success('¡Contacto actualizado exitosamente!');
+        toast.success('Contacto actualizado exitosamente');
       } else {
         await contactsApi.create(formData);
-        toast.success('¡Contacto creado exitosamente!');
+        toast.success('Contacto creado exitosamente');
       }
 
       navigate('/');
-    } catch (err) {
-      const errorMessage = isEditing ? 'Error al actualizar el contacto' : 'Error al crear el contacto';
-      setError(errorMessage);
-      toast.error(errorMessage);
+    } catch (err: any) {
       console.error('Error saving contact:', err);
+      
+      // Manejo de errores del backend
+      if (err.response?.data?.details) {
+        // Si el backend devuelve errores de validación específicos
+        const backendErrors: FormErrors = {};
+        err.response.data.details.forEach((detail: any) => {
+          if (detail.path && detail.message) {
+            backendErrors[detail.path[0] as keyof FormErrors] = detail.message;
+          }
+        });
+        setErrors(backendErrors);
+        toast.error('Por favor corrige los errores en el formulario');
+      } else {
+        const errorMessage = isEditing ? 'Error al actualizar el contacto' : 'Error al crear el contacto';
+        setError(errorMessage);
+        toast.error(errorMessage);
+      }
     } finally {
       setLoading(false);
     }
@@ -276,6 +275,8 @@ const ContactForm: React.FC = () => {
             onChange={handleInputChange}
             className={errors.nombre ? 'error' : ''}
             placeholder="Ingresa el nombre"
+            maxLength={50}
+            required
           />
           {errors.nombre && <ErrorText>{errors.nombre}</ErrorText>}
         </FormGroup>
@@ -290,6 +291,8 @@ const ContactForm: React.FC = () => {
             onChange={handleInputChange}
             className={errors.apellido ? 'error' : ''}
             placeholder="Ingresa el apellido"
+            maxLength={50}
+            required
           />
           {errors.apellido && <ErrorText>{errors.apellido}</ErrorText>}
         </FormGroup>
@@ -303,7 +306,9 @@ const ContactForm: React.FC = () => {
             value={formData.telefono}
             onChange={handleInputChange}
             className={errors.telefono ? 'error' : ''}
-            placeholder="Ingresa el teléfono"
+            placeholder="+54 11 1234-5678"
+            maxLength={20}
+            required
           />
           {errors.telefono && <ErrorText>{errors.telefono}</ErrorText>}
         </FormGroup>
@@ -317,7 +322,9 @@ const ContactForm: React.FC = () => {
             value={formData.email}
             onChange={handleInputChange}
             className={errors.email ? 'error' : ''}
-            placeholder="Ingresa el email"
+            placeholder="ejemplo@correo.com"
+            maxLength={100}
+            required
           />
           {errors.email && <ErrorText>{errors.email}</ErrorText>}
         </FormGroup>
