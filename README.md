@@ -44,32 +44,28 @@ npm run dev
 npm run build
 ```
 
-### Con Docker
+### Con Docker (Imagen Individual)
 
 ```bash
 # Construir la imagen
-docker build -t agenda-contactos-frontend .
+docker build -t frontend-contacts .
 
-# Ejecutar el contenedor
-docker run -p 3000:80 agenda-contactos-frontend
+# Ejecutar el contenedor (solo frontend)
+docker run -p 80:80 frontend-contacts
 ```
 
-### Con Docker Compose (Stack Completo)
-
-```bash
-# Ejecutar frontend, backend y base de datos
-docker-compose up -d
-
-# Acceder a la aplicación
-# Frontend: http://localhost:3000
-# Backend API: http://localhost:3002/api
-```
+> **🚀 Para el stack completo (Frontend + Backend + Base de datos):**  
+> **Usa el repositorio del backend ADR-BACK que incluye la orquestación completa con Docker Compose.**
 
 ## 🌐 API Backend
 
-La aplicación consume una API REST que debe estar ejecutándose en:
-- **URL por defecto**: `http://localhost:3002/api`
-- **Configuración**: Variable de entorno `REACT_APP_API_URL`
+La aplicación consume una API REST. Para desarrollo local:
+- **URL**: `http://localhost:3001/api` (desarrollo)
+- **URL**: `/api` (producción con proxy reverso)
+- **Configuración**: Variables de entorno `VITE_REACT_APP_API_URL`
+
+> **🔗 Stack Completo**: Para ejecutar frontend + backend + base de datos integrados,  
+> **usa el repositorio ADR-BACK que incluye la orquestación completa.**
 
 ### Endpoints utilizados:
 - `GET /contacts` - Listar todos los contactos
@@ -124,12 +120,15 @@ src/
 
 ### Variables de Entorno
 
-Crear un archivo `.env` en la raíz:
+Para desarrollo local, crear un archivo `.env`:
 
 ```env
-# URL de la API backend
-REACT_APP_API_URL=http://localhost:3002/api
+# URL de la API backend (desarrollo)
+VITE_REACT_APP_API_URL=http://localhost:3001/api
+VITE_REACT_APP_API_BASE_URL=http://localhost:3001/api
 ```
+
+> **Producción**: Las variables de entorno se configuran en el Docker Compose del backend.
 
 ### Scripts Disponibles
 
@@ -147,14 +146,24 @@ npm run lint         # Ejecutar ESLint
 El proyecto incluye un Dockerfile optimizado:
 - Etapa de construcción con Node.js
 - Etapa de producción con Nginx
-- Imagen final ligera (~25MB)
+- Imagen final ligera (~80MB)
 
-### Docker Compose
+### Stack Completo
 
-Stack completo con:
-- Frontend (puerto 3000)
-- Backend (puerto 3002)
-- Base de datos MySQL (puerto 3306)
+Para el despliegue completo (Frontend + Backend + Base de datos + Proxy reverso):
+- **Repositorio**: ADR-BACK
+- **Comando**: `docker-compose up -d` (desde ADR-BACK)
+- **Puerto**: http://localhost (todo integrado)
+
+### Imagen en Docker Hub
+
+```bash
+# Descargar imagen
+docker pull agusklos/frontend-contacts:latest
+
+# Ejecutar (solo frontend)
+docker run -p 80:80 agusklos/frontend-contacts:latest
+```
 
 ## 🔍 Testing
 
